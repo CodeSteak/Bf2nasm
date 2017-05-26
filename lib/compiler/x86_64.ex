@@ -9,6 +9,7 @@ defmodule Bf2nasm.Compiler.X86_64 do
 %define stdout       1
 %define POINTER      r14
 %define VALUE_SAVE   r15
+%define TEMP         cl
 %define VALUE        al
 
 section .bss
@@ -65,6 +66,14 @@ _start
   def compile_ast([{:set, value, _pos}|tail], file, meta) do
     IO.write(file, """
     mov VALUE, byte #{value}
+    """)
+    compile_ast(tail, file, meta)
+  end
+
+  def compile_ast([{:add_to_next_and_set_to_zero, _value, _pos}|tail], file, meta) do
+    IO.write(file, """
+    add [POINTER+1], VALUE
+    mov VALUE, 0
     """)
     compile_ast(tail, file, meta)
   end

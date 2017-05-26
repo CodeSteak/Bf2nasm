@@ -8,14 +8,14 @@ defmodule Bf2nasm.Parser do
 
   def parse_ast("<"<>code, out, pos) do
     parse_ast(code,
-      out ++ [{:incptr, 1, pos}],
+      out ++ [{:incptr, -1, pos}],
       Pos.next(pos)
     )
   end
 
   def parse_ast(">"<>code, out, pos) do
     parse_ast(code,
-      out ++ [{:incptr, -1, pos}],
+      out ++ [{:incptr, 1, pos}],
       Pos.next(pos)
     )
   end
