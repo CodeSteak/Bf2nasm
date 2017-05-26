@@ -11,7 +11,7 @@ yet. Currently you can only pass one filename to Bf2nasm.
 
 For using it you need to have `yasm` installed.
 
-## Build
+## Building
 ```bash
 $ git clone https://github.com/CodeSteak/Bf2nasm
 $ cd Bf2nasm
@@ -22,8 +22,8 @@ $ mix escript.build
 
 ```bash
 
-$ echo '++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]'/
-      '>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.' > hello.bf
+$ echo '++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>'/
+       '.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.' > hello.bf
 $ ./bf2nasm hello.bf
 $ ./hello
 ```
