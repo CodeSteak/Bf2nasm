@@ -46,34 +46,25 @@ _start
     {_, 0} = System.cmd("ld", ["-o", executable, object])
   end
 
-  def compile_ast([{:incptr, _, _pos}|tail], file, meta) do
+  def compile_ast([{:incptr, value, _pos}|tail], file, meta) do
     IO.write(file, """
     mov [POINTER], byte VALUE
-    inc POINTER
+    add POINTER, #{value}
     mov VALUE, byte [POINTER]
     """)
     compile_ast(tail, file, meta)
   end
 
-  def compile_ast([{:decptr, _, _pos}|tail], file, meta) do
+  def compile_ast([{:inc, value, _pos}|tail], file, meta) do
     IO.write(file, """
-    mov [POINTER], byte VALUE
-    dec POINTER
-    mov VALUE, byte [POINTER]
+    add VALUE, byte #{value}
     """)
     compile_ast(tail, file, meta)
   end
 
-  def compile_ast([{:inc, _, _pos}|tail], file, meta) do
+  def compile_ast([{:set, value, _pos}|tail], file, meta) do
     IO.write(file, """
-    inc byte VALUE
-    """)
-    compile_ast(tail, file, meta)
-  end
-
-  def compile_ast([{:dec, _, _pos}|tail], file, meta) do
-    IO.write(file, """
-    dec byte VALUE
+    mov VALUE, byte #{value}
     """)
     compile_ast(tail, file, meta)
   end

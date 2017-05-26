@@ -1,4 +1,4 @@
-defmodule Bf2nasm.Parser.Parser do
+defmodule Bf2nasm.Parser do
   alias Bf2nasm.Parser.SourcePos, as: Pos
 
   def parse_ast(code) do
@@ -8,28 +8,28 @@ defmodule Bf2nasm.Parser.Parser do
 
   def parse_ast("<"<>code, out, pos) do
     parse_ast(code,
-      out ++ [{:incptr, :_, pos}],
+      out ++ [{:incptr, 1, pos}],
       Pos.next(pos)
     )
   end
 
   def parse_ast(">"<>code, out, pos) do
     parse_ast(code,
-      out ++ [{:decptr, :_, pos}],
+      out ++ [{:incptr, -1, pos}],
       Pos.next(pos)
     )
   end
 
   def parse_ast("+"<>code, out, pos) do
     parse_ast(code,
-      out ++ [{:inc, :_, pos}],
+      out ++ [{:inc, 1, pos}],
       Pos.next(pos)
     )
   end
 
   def parse_ast("-"<>code, out, pos) do
     parse_ast(code,
-      out ++ [{:dec, :_, pos}],
+      out ++ [{:inc, -1, pos}],
       Pos.next(pos)
     )
   end

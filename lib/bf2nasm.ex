@@ -1,6 +1,7 @@
 defmodule Bf2nasm do
-  alias Bf2nasm.Parser.Parser, as: Parser
+  alias Bf2nasm.Parser, as: Parser
   alias Bf2nasm.Compiler.X86_64, as: Compiler
+  alias Bf2nasm.Optimizer, as: Optimizer
 
   def main([file]) do
     res = case File.read(file) do
@@ -9,7 +10,9 @@ defmodule Bf2nasm do
     end
 
     [prefix, "bf"] = String.split(file, ".")
-    res |> Compiler.compile(prefix)
+    res
+     |> Optimizer.optimize()
+     |> Compiler.compile(prefix)
     :ok
   end
 
