@@ -3,7 +3,7 @@
 Bf2nasm is a small brainfuck to x86_64 compiler written in elixir. It outputs x86_64
 assembly in `nasm` syntax, compiles it using `yasm` and finaly links it using `ld`.
 
-Please note that Bf2nasm outputs unoptimized assembly and therefore may be slower
+Please note that Bf2nasm outputs barely optimized assembly and therefore may be slower
 than other brainfuck compiler. Also a "real" commandline interface isn't implement
 yet. Currently you can only pass one filename to Bf2nasm.
 
