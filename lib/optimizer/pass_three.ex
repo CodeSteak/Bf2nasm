@@ -3,8 +3,7 @@ defmodule Bf2nasm.Optimizer.PassThree do
 
   def pattern(processed, [{:incptr, inc1, pos},
                           {:inc, val, _pos2},
-                          {:incptr, inc2, pos3}| tail]) do
-    IO.warn("Nasty bug in this step") 
+                          {:incptr, inc2, pos3}| tail]) when inc1+inc2 != 0 do
     pattern(processed, [{:add_to_offset, {val, inc1}, pos}, {:incptr, inc1+inc2, pos3} | tail])
   end
 

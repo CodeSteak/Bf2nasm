@@ -3,6 +3,6 @@ defmodule Bf2nasm.Optimizer do
     ast
     |> Bf2nasm.Optimizer.PassOne.pattern()
     |> Bf2nasm.Optimizer.PassTwo.pattern()
-    #|> Bf2nasm.Optimizer.PassThree.pattern() #<-- unfixed bug in here
+    |> Bf2nasm.Optimizer.PassThree.pattern()
   end
 end

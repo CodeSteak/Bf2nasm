@@ -56,11 +56,43 @@ _start
      compile_ast(val, file, meta)
   end
 
+  def compile_ast([{:incptr, 1, _pos}|tail], file, meta) do
+    IO.write(file, """
+      mov [POINTER], byte VALUE
+      inc POINTER
+      mov VALUE, byte [POINTER]
+    """)
+    compile_ast_info(tail, file, meta)
+  end
+
+  def compile_ast([{:incptr, -1, _pos}|tail], file, meta) do
+    IO.write(file, """
+      mov [POINTER], byte VALUE
+      dec POINTER
+      mov VALUE, byte [POINTER]
+    """)
+    compile_ast_info(tail, file, meta)
+  end
+
   def compile_ast([{:incptr, value, _pos}|tail], file, meta) do
     IO.write(file, """
       mov [POINTER], byte VALUE
       add POINTER, #{value}
       mov VALUE, byte [POINTER]
+    """)
+    compile_ast_info(tail, file, meta)
+  end
+
+  def compile_ast([{:inc, 1, _pos}|tail], file, meta) do
+    IO.write(file, """
+      inc VALUE
+    """)
+    compile_ast_info(tail, file, meta)
+  end
+
+  def compile_ast([{:dec, 1, _pos}|tail], file, meta) do
+    IO.write(file, """
+      dec VALUE
     """)
     compile_ast_info(tail, file, meta)
   end
@@ -88,6 +120,10 @@ _start
   end
 
   def compile_ast([{:add_to_offset, {value, offset}, _pos}|tail], file, meta) do
+    if offset == 0 do
+      throw "add_to_offset: illegal argument `offset`"
+    end
+
     if offset > 0 do
       IO.write(file, """
         add byte [POINTER+#{offset}], byte #{value}
