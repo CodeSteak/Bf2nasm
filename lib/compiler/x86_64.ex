@@ -47,78 +47,100 @@ _start
     {_, 0} = System.cmd("ld", ["-o", executable, object])
   end
 
+  def compile_ast_info([{cmd, value, pos}|tail], file, meta) do
+    IO.write(file, "\t\t\t\t\t\t;\t#{inspect({cmd, value, pos})}\n")
+     compile_ast([{cmd, value, pos}|tail], file, meta)
+  end
+
+  def compile_ast_info(val, file, meta) do
+     compile_ast(val, file, meta)
+  end
+
   def compile_ast([{:incptr, value, _pos}|tail], file, meta) do
     IO.write(file, """
-    mov [POINTER], byte VALUE
-    add POINTER, #{value}
-    mov VALUE, byte [POINTER]
+      mov [POINTER], byte VALUE
+      add POINTER, #{value}
+      mov VALUE, byte [POINTER]
     """)
-    compile_ast(tail, file, meta)
+    compile_ast_info(tail, file, meta)
   end
 
   def compile_ast([{:inc, value, _pos}|tail], file, meta) do
     IO.write(file, """
-    add VALUE, byte #{value}
+      add VALUE, byte #{value}
     """)
-    compile_ast(tail, file, meta)
+    compile_ast_info(tail, file, meta)
   end
 
   def compile_ast([{:set, value, _pos}|tail], file, meta) do
     IO.write(file, """
-    mov VALUE, byte #{value}
+      mov VALUE, byte #{value}
     """)
-    compile_ast(tail, file, meta)
+    compile_ast_info(tail, file, meta)
   end
 
   def compile_ast([{:add_to_next_and_set_to_zero, _value, _pos}|tail], file, meta) do
     IO.write(file, """
-    add [POINTER+1], VALUE
-    mov VALUE, 0
+      add [POINTER+1], VALUE
+      mov VALUE, 0
     """)
-    compile_ast(tail, file, meta)
+    compile_ast_info(tail, file, meta)
+  end
+
+  def compile_ast([{:add_to_offset, {value, offset}, _pos}|tail], file, meta) do
+    if offset > 0 do
+      IO.write(file, """
+        add byte [POINTER+#{offset}], byte #{value}
+      """)
+    else
+      IO.write(file, """
+        add byte [POINTER-#{-offset}], byte #{value}
+      """)
+    end
+    compile_ast_info(tail, file, meta)
   end
 
   def compile_ast([{:write, _, _pos}|tail], file, meta) do
     IO.write(file, """
-    mov [buffer], VALUE
-    mov VALUE_SAVE, rax
-    mov rax, sys_write
-    mov rdi, stdout
-    mov rsi, buffer
-    mov rdx, 1         ; length
-    syscall
-    mov rax, VALUE_SAVE
+      mov [buffer], VALUE
+      mov VALUE_SAVE, rax
+      mov rax, sys_write
+      mov rdi, stdout
+      mov rsi, buffer
+      mov rdx, 1         ; length
+      syscall
+      mov rax, VALUE_SAVE
     """)
-    compile_ast(tail, file, meta)
+    compile_ast_info(tail, file, meta)
   end
 
   def compile_ast([{:read, _, _pos}|tail], file, meta) do
     IO.write(file, """
-    mov rax, sys_read
-    mov rdi, stdin
-    mov rsi, buffer ; into
-    mov rdx, 1
-    syscall
-    mov VALUE, byte [buffer]
+      mov rax, sys_read
+      mov rdi, stdin
+      mov rsi, buffer ; into
+      mov rdx, 1
+      syscall
+      mov VALUE, byte [buffer]
     """)
-    compile_ast(tail, file, meta)
+    compile_ast_info(tail, file, meta)
   end
 
   def compile_ast([inner|tail], file, {jmp}) when is_list(inner) do
     IO.write(file, """
 bracket_open_#{jmp}:
-    cmp VALUE, 0
-    je bracket_close_#{jmp}
+      cmp VALUE, 0
+      je bracket_close_#{jmp}
     """)
 
     {:ok, _, meta} = compile_ast(inner, file, {jmp+1})
 
     IO.write(file, """
-    jmp bracket_open_#{jmp}
+      jmp bracket_open_#{jmp}
 bracket_close_#{jmp}:
     """)
 
-    compile_ast(tail, file, meta)
+    compile_ast_info(tail, file, meta)
   end
 
   def compile_ast([], file, meta) do
