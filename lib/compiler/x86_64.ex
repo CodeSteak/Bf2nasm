@@ -46,7 +46,7 @@ _start
     {_, 0} = System.cmd("ld", ["-o", executable, object])
   end
 
-  def compile_ast([{:incptr, _, pos}|tail], file, meta) do
+  def compile_ast([{:incptr, _, _pos}|tail], file, meta) do
     IO.write(file, """
     mov [POINTER], byte VALUE
     inc POINTER
@@ -55,7 +55,7 @@ _start
     compile_ast(tail, file, meta)
   end
 
-  def compile_ast([{:decptr, _, pos}|tail], file, meta) do
+  def compile_ast([{:decptr, _, _pos}|tail], file, meta) do
     IO.write(file, """
     mov [POINTER], byte VALUE
     dec POINTER
@@ -64,21 +64,21 @@ _start
     compile_ast(tail, file, meta)
   end
 
-  def compile_ast([{:inc, _, pos}|tail], file, meta) do
+  def compile_ast([{:inc, _, _pos}|tail], file, meta) do
     IO.write(file, """
     inc byte VALUE
     """)
     compile_ast(tail, file, meta)
   end
 
-  def compile_ast([{:dec, _, pos}|tail], file, meta) do
+  def compile_ast([{:dec, _, _pos}|tail], file, meta) do
     IO.write(file, """
     dec byte VALUE
     """)
     compile_ast(tail, file, meta)
   end
 
-  def compile_ast([{:write, _, pos}|tail], file, meta) do
+  def compile_ast([{:write, _, _pos}|tail], file, meta) do
     IO.write(file, """
     mov [buffer], VALUE
     mov VALUE_SAVE, rax
@@ -92,7 +92,7 @@ _start
     compile_ast(tail, file, meta)
   end
 
-  def compile_ast([{:read, _, pos}|tail], file, meta) do
+  def compile_ast([{:read, _, _pos}|tail], file, meta) do
     IO.write(file, """
     mov rax, sys_read
     mov rdi, stdin
