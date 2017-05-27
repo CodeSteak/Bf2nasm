@@ -142,6 +142,16 @@ _start
     compile_ast_info(tail, file, meta)
   end
 
+  #copy loop
+  def compile_ast([{:multiply_to_two_and_set_to_zero, {offset1, 1, offset2, 1}, _pos}|tail], file, meta) do
+    IO.write(file, """
+      add [POINTER#{n(offset1)}], VALUE
+      add [POINTER#{n(offset2)}], VALUE
+      mov VALUE, 0
+    """)
+    compile_ast_info(tail, file, meta)
+  end
+
   # TODO: deduplicate code
   def compile_ast([{:multiply_to_two_and_set_to_zero, {offset1, factor1, offset2, factor2}, _pos}|tail], file, meta) do
     IO.write(file, """
@@ -157,6 +167,7 @@ _start
     """)
     compile_ast_info(tail, file, meta)
   end
+
 
   def compile_ast([{:add_to_offset, {value, offset}, _pos}|tail], file, meta) do
     IO.write(file, """

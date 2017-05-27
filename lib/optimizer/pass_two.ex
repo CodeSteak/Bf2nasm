@@ -48,11 +48,10 @@ defmodule Bf2nasm.Optimizer.PassTwo do
                           {:inc, factor2, _pos4},
                           {:incptr, offset3, _pos5}]| tail])
                           when offset1 + offset2 - offset3 == 0
-                              and factor1 > 1
-                              and factor2 > 1 do
+                              and factor1 > 0
+                              and factor2 > 0 do
     pattern(processed, [{:multiply_to_two_and_set_to_zero, {offset1, factor1, offset2, factor2}, pos} | tail])
   end
-
 
   Bf2nasm.Optimizer.Template.end_use_template
 end
