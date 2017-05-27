@@ -59,7 +59,6 @@ _start
 
   def compile_ast([{:incptr, 1, _pos}|tail], file, meta) do
     IO.write(file, """
-      mov [POINTER], byte VALUE
       inc POINTER
       mov VALUE, byte [POINTER]
     """)
@@ -68,7 +67,6 @@ _start
 
   def compile_ast([{:incptr, -1, _pos}|tail], file, meta) do
     IO.write(file, """
-      mov [POINTER], byte VALUE
       dec POINTER
       mov VALUE, byte [POINTER]
     """)
@@ -77,7 +75,6 @@ _start
 
   def compile_ast([{:incptr, value, _pos}|tail], file, meta) do
     IO.write(file, """
-      mov [POINTER], byte VALUE
       add POINTER, #{value}
       mov VALUE, byte [POINTER]
     """)
@@ -87,6 +84,7 @@ _start
   def compile_ast([{:inc, 1, _pos}|tail], file, meta) do
     IO.write(file, """
       inc VALUE
+      mov [POINTER], byte VALUE
     """)
     compile_ast_info(tail, file, meta)
   end
@@ -94,6 +92,7 @@ _start
   def compile_ast([{:dec, 1, _pos}|tail], file, meta) do
     IO.write(file, """
       dec VALUE
+      mov [POINTER], byte VALUE
     """)
     compile_ast_info(tail, file, meta)
   end
@@ -101,6 +100,7 @@ _start
   def compile_ast([{:inc, value, _pos}|tail], file, meta) do
     IO.write(file, """
       add VALUE, byte #{value}
+      mov [POINTER], byte VALUE
     """)
     compile_ast_info(tail, file, meta)
   end
@@ -108,6 +108,7 @@ _start
   def compile_ast([{:set, value, _pos}|tail], file, meta) do
     IO.write(file, """
       mov VALUE, byte #{value}
+      mov [POINTER], byte VALUE
     """)
     compile_ast_info(tail, file, meta)
   end
@@ -119,7 +120,8 @@ _start
 
     IO.write(file, """
       add [POINTER#{n(offset)}], VALUE
-      mov VALUE, 0
+      xor VALUE, VALUE
+      mov [POINTER], byte VALUE
     """)
     compile_ast_info(tail, file, meta)
   end
@@ -127,7 +129,8 @@ _start
   def compile_ast([{:sub_to_next_and_set_to_zero, offset, _pos}|tail], file, meta) do
     IO.write(file, """
       sub [POINTER#{n(offset)}], VALUE
-      mov VALUE, 0
+      xor VALUE, VALUE
+      mov [POINTER], byte VALUE
     """)
     compile_ast_info(tail, file, meta)
   end
@@ -137,7 +140,8 @@ _start
       mov TEMP, #{factor}
       mul TEMP
       add [POINTER#{n(offset)}], VALUE
-      mov VALUE, 0
+      xor VALUE, VALUE
+      mov [POINTER], byte VALUE
     """)
     compile_ast_info(tail, file, meta)
   end
@@ -147,7 +151,8 @@ _start
     IO.write(file, """
       add [POINTER#{n(offset1)}], VALUE
       add [POINTER#{n(offset2)}], VALUE
-      mov VALUE, 0
+      xor VALUE, VALUE
+      mov [POINTER], byte VALUE
     """)
     compile_ast_info(tail, file, meta)
   end
@@ -163,7 +168,8 @@ _start
       mov TEMP, #{factor2}
       mul TEMP
       add [POINTER#{n(offset2)}], VALUE
-      mov VALUE, 0
+      xor VALUE, VALUE
+      mov [POINTER], byte VALUE
     """)
     compile_ast_info(tail, file, meta)
   end
@@ -186,6 +192,7 @@ _start
       mov rdx, 1         ; length
       syscall
       mov rax, VALUE_SAVE
+      mov [POINTER], byte VALUE
     """)
     compile_ast_info(tail, file, meta)
   end
@@ -198,6 +205,7 @@ _start
       mov rdx, 1
       syscall
       mov VALUE, byte [buffer]
+      mov [POINTER], byte VALUE
     """)
     compile_ast_info(tail, file, meta)
   end
