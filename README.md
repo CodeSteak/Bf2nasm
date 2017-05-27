@@ -6,8 +6,6 @@ Support for other Operating systems is currently not planned.
 
 Performance should be comparable to other Brainfuck compilers.
 
-Please note that the command line interface is work in progress.
-Currently you can only pass one filename, ending with `.bf`, to Bf2nasm.
 ## Dependencies
 
 For using it you need to have `yasm` installed.
@@ -25,6 +23,6 @@ $ mix escript.build
 
 $ echo '++++++++[>++++[>++>+++>+++>+<<<<-]>+>+>->>+[<]<-]>>'\
        '.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.' > hello.bf
-$ ./bf2nasm hello.bf
+$ ./bf2nasm hello.bf -o hello
 $ ./hello
 ```

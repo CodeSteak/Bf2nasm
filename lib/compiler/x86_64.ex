@@ -1,51 +1,39 @@
 defmodule Bf2nasm.Compiler.X86_64 do
 
-@header """
-%define sys_write    1
-%define sys_read     0
-%define sys_exit     60
+  def compile(ast, options) do
+    file_prefix = Keyword.get(options, :output)
 
-%define stdin        0
-%define stdout       1
-%define POINTER      r14
-%define VALUE_SAVE   r15
-%define TEMP         cl
-%define TEMP2        dl
-%define VALUE        al
+    "x86_64" = Keyword.get(options, :target, "x86_64")
 
-section .bss
-  align 8
-  buffer resb 8
-  memory resb 65536 * 2
+    memory_size = Keyword.get(options, :memory_size, 65536)
 
-section .text
-  global _start
-
-_start
-  xor rax, rax
-  mov POINTER, memory
-  add POINTER, 65536
-"""
-
-@footer """
-  mov rax, sys_exit
-  mov rdi, 0        ; exit code
-  syscall
-"""
-
-  def compile(ast, file_prefix) do
     nasm = file_prefix<>".nasm"
     object = file_prefix<>".o"
     executable = file_prefix
+
     File.open!(nasm, [:write], fn file ->
-      IO.write(file,@header)
+      IO.write(file, header(memory_size))
       compile_ast(ast, file, {0})
-      IO.write(file,@footer)
+      IO.write(file, footer())
     end)
-    # `yasm -f elf64 -o #{object} #{nasm}`
-    {_, 0} = System.cmd("yasm", ["-f", "elf64", "-o", object, nasm])
-    # `ld -o #{object} #{executable}`
-    {_, 0} = System.cmd("ld", ["-o", executable, object])
+
+    case System.cmd("yasm", ["-f", "elf64", "-o", object, nasm]) do
+      {_, 0} ->
+        :ok
+      {err,n} ->
+        IO.warn "compiling failed!"
+        IO.warn(err)
+        System.halt(n)
+    end
+
+    case System.cmd("ld", ["-o", executable, object]) do
+      {_, 0} ->
+        :ok
+      {err,n} ->
+        IO.warn "linking failed!"
+        IO.warn(err)
+        System.halt(n)
+    end
   end
 
   def compile_ast_info([{cmd, value, pos}|tail], file, meta) do
@@ -234,5 +222,41 @@ bracket_close_#{jmp}:
     else
       "-#{-offset}"
     end
+  end
+
+  def header(mem_size) do
+    """
+    %define sys_write    1
+    %define sys_read     0
+    %define sys_exit     60
+
+    %define stdin        0
+    %define stdout       1
+    %define POINTER      r14
+    %define VALUE_SAVE   r15
+    %define TEMP         cl
+    %define TEMP2        dl
+    %define VALUE        al
+
+    section .bss
+      align 8
+      buffer resb 8
+      memory resb #{mem_size}
+
+    section .text
+      global _start
+
+    _start
+      xor rax, rax
+      mov POINTER, memory
+    """
+  end
+
+  def footer do
+    """
+      mov rax, sys_exit
+      mov rdi, 0        ; exit code
+      syscall
+    """
   end
 end
