@@ -28,7 +28,8 @@ defmodule Bf2nasm do
     options = if Keyword.has_key?(options, :output) do
       options
     else
-      Keyword.put(options, :output, inputfile<>"."<>Keyword.get(options, :target, "x86_64"))
+      Keyword.put(options, :output,
+                  inputfile <> "." <> Keyword.get(options, :target, "x86_64"))
     end
 
     res
@@ -43,16 +44,16 @@ defmodule Bf2nasm do
 
       options:
         --help, -h
-                      Print this help page.
+                    Print this help page.
         --no-optimization, -n
-                      Do not optimize the compiled code.
+                    Do not optimize the compiled code.
         --memory-size <number>, -m <number>
-                      Sets the minimum number of cells of the brainfuck programm.
-                      Defaults to 65536.
+                    Sets the minimum number of cells of the brainfuck programm.
+                    Defaults to 65536.
         --output <file>, -o <file>
-                      Sets the output file.
+                    Sets the output file.
         --target x86_64
-                      Sets the target. Currently only "x86_64" is valid.
+                    Sets the target. Currently only "x86_64" is valid.
     """
   end
 
@@ -75,22 +76,28 @@ defmodule Bf2nasm do
       aliases: @aliases)
 
     case opts do
-      {_, _, [{option, _}|_tail] } ->
-        IO.warn("#{option} : Unknown option or bad argument.")
+      {_, _, [{option, _} | _tail] } ->
+        IO.warn "#{option} : Unknown option or bad argument."
         {:error, :wrong_option}
-      {_, [_,b|_tail],_} ->
-        IO.warn("Don't know how to deal with '#{b}'. For output file please use -o <output>")
+
+      {_, [_, b | _tail], _} ->
+        IO.warn "Don't know how to deal with '#{b}'. "<>
+                "For output file please use -o <output>"
         {:error, :double_arg}
-      {options, [],_} ->
+
+      {options, [], _} ->
         unless Keyword.get(options, :help) do
           IO.warn("No input specified.")
         end
         {:error, :double_arg}
+
       {options, [inputfile], _} ->
         {:ok, {inputfile, options}}
+
       _ ->
         IO.warn("Wrong arguments")
         {:error, :wtf}
+
     end
   end
 end

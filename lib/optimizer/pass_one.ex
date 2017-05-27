@@ -9,11 +9,11 @@ defmodule Bf2nasm.Optimizer.PassOne do
      pattern(processed, [{:inc, v1+v2, pos1} | tail])
   end
 
-  def pattern(processed, [{:inc, 0, pos}| tail]) do
+  def pattern(processed, [{:inc, 0, _pos} | tail]) do
     pattern(processed, tail)
   end
 
-  def pattern(processed, [{:incptr, 0, pos}| tail]) do
+  def pattern(processed, [{:incptr, 0, _pos} | tail]) do
     pattern(processed, tail)
   end
 

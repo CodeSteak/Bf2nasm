@@ -1,5 +1,5 @@
 defmodule Bf2nasm.Optimizer.Template do
-  defmacro __using__(opts) do
+  defmacro __using__(_opts) do
     quote do
       def pattern(ast) do
          pattern([], ast)
@@ -19,7 +19,7 @@ defmodule Bf2nasm.Optimizer.Template do
       end
 
       def pattern(processed, [head | tail]) do
-        pattern(processed++[head], tail)
+        pattern(processed ++ [ head ], tail)
       end
     end
   end
