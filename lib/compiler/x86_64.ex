@@ -111,11 +111,22 @@ _start
     compile_ast_info(tail, file, meta)
   end
 
-  def compile_ast([{:add_to_next_and_set_to_zero, _value, _pos}|tail], file, meta) do
-    IO.write(file, """
-      add [POINTER+1], VALUE
-      mov VALUE, 0
-    """)
+  def compile_ast([{:add_to_next_and_set_to_zero, offset, _pos}|tail], file, meta) do
+    if offset == 0 do
+      throw "add_to_next_and_set_to_zero: illegal argument `offset`"
+    end
+
+    if offset > 0 do
+      IO.write(file, """
+        add [POINTER+#{offset}], VALUE
+        mov VALUE, 0
+      """)
+    else
+      IO.write(file, """
+        add [POINTER-#{-offset}], VALUE
+        mov VALUE, 0
+      """)
+    end
     compile_ast_info(tail, file, meta)
   end
 

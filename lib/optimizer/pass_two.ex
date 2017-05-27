@@ -9,13 +9,13 @@ defmodule Bf2nasm.Optimizer.PassTwo do
 
   # Add two numbers
   # [->+<]
-  # next    += current
+  # next   += current
   # current = 0
   def pattern(processed, [[{:inc, -1, pos},
-                          {:incptr, 1, _pos1},
+                          {:incptr, offset1, _pos1},
                           {:inc, 1, _pos2},
-                          {:incptr, -1, _pos3}]| tail]) do
-    pattern(processed, [{:add_to_next_and_set_to_zero, :_, pos} | tail])
+                          {:incptr, offset2, _pos3}]| tail]) when offset1 == -offset2 do
+    pattern(processed, [{:add_to_next_and_set_to_zero, offset1, pos} | tail])
   end
 
   Bf2nasm.Optimizer.Template.end_use_template
