@@ -10,6 +10,7 @@ defmodule Bf2nasm.Compiler.X86_64 do
 %define POINTER      r14
 %define VALUE_SAVE   r15
 %define TEMP         cl
+%define TEMP2        dl
 %define VALUE        al
 
 section .bss
@@ -116,34 +117,51 @@ _start
       throw "add_to_next_and_set_to_zero: illegal argument `offset`"
     end
 
-    if offset > 0 do
-      IO.write(file, """
-        add [POINTER+#{offset}], VALUE
-        mov VALUE, 0
-      """)
-    else
-      IO.write(file, """
-        add [POINTER-#{-offset}], VALUE
-        mov VALUE, 0
-      """)
-    end
+    IO.write(file, """
+      add [POINTER#{n(offset)}], VALUE
+      mov VALUE, 0
+    """)
+    compile_ast_info(tail, file, meta)
+  end
+
+  def compile_ast([{:sub_to_next_and_set_to_zero, offset, _pos}|tail], file, meta) do
+    IO.write(file, """
+      sub [POINTER#{n(offset)}], VALUE
+      mov VALUE, 0
+    """)
+    compile_ast_info(tail, file, meta)
+  end
+
+  def compile_ast([{:multiply_to_next_and_set_to_zero, {offset, factor}, _pos}|tail], file, meta) do
+    IO.write(file, """
+      mov TEMP, #{factor}
+      mul TEMP
+      add [POINTER#{n(offset)}], VALUE
+      mov VALUE, 0
+    """)
+    compile_ast_info(tail, file, meta)
+  end
+
+  # TODO: deduplicate code
+  def compile_ast([{:multiply_to_two_and_set_to_zero, {offset1, factor1, offset2, factor2}, _pos}|tail], file, meta) do
+    IO.write(file, """
+      mov TEMP2, VALUE ; save
+      mov TEMP, #{factor1}
+      mul TEMP
+      add [POINTER#{n(offset1)}], VALUE
+      mov VALUE, TEMP2 ; restore
+      mov TEMP, #{factor2}
+      mul TEMP
+      add [POINTER#{n(offset2)}], VALUE
+      mov VALUE, 0
+    """)
     compile_ast_info(tail, file, meta)
   end
 
   def compile_ast([{:add_to_offset, {value, offset}, _pos}|tail], file, meta) do
-    if offset == 0 do
-      throw "add_to_offset: illegal argument `offset`"
-    end
-
-    if offset > 0 do
-      IO.write(file, """
-        add byte [POINTER+#{offset}], byte #{value}
-      """)
-    else
-      IO.write(file, """
-        add byte [POINTER-#{-offset}], byte #{value}
-      """)
-    end
+    IO.write(file, """
+      add byte [POINTER#{n(offset)}], byte #{value}
+    """)
     compile_ast_info(tail, file, meta)
   end
 
@@ -180,7 +198,7 @@ bracket_open_#{jmp}:
       je bracket_close_#{jmp}
     """)
 
-    {:ok, _, meta} = compile_ast(inner, file, {jmp+1})
+    {:ok, _, meta} = compile_ast_info(inner, file, {jmp+1})
 
     IO.write(file, """
       jmp bracket_open_#{jmp}
@@ -192,5 +210,18 @@ bracket_close_#{jmp}:
 
   def compile_ast([], file, meta) do
     {:ok, file, meta}
+  end
+
+  # pseudo nomalize
+  defp n(offset) do
+    if offset == 0 do
+      throw "illegal offset"
+    end
+
+    if offset > 0 do
+      "+#{offset}"
+    else
+      "-#{-offset}"
+    end
   end
 end
