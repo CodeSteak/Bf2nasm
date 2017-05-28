@@ -1,41 +1,46 @@
 defmodule Bf2nasm do
   alias Bf2nasm.Parser, as: Parser
-  alias Bf2nasm.Compiler.X86_64, as: Compiler
+  alias Bf2nasm.Compiler, as: Compiler
   alias Bf2nasm.Optimizer, as: Optimizer
 
   def main(args) do
     case parse_args(args) do
       {:ok, {input, options}} ->
-        if Keyword.get(options, :help) do
-          help()
-        else
-          run(input, options)
-        end
+        run(input, options)
       _ ->
         help()
     end
   end
 
-  def run(inputfile, options) do
-    res = case File.read(inputfile) do
+  def run(_inputfile, %{:help => true}), do: help()
+
+  def run(inputfile, %{:output => _outputfile, :target => _target} = options) do
+    file_content = case File.read(inputfile) do
       {:ok, content} ->
-        Parser.parse_ast(content)
+        content
       {:error, r} ->
         IO.warn("Could not open inputfile #{inspect(r)}")
         System.halt(1)
     end
 
-    options = if Keyword.has_key?(options, :output) do
-      options
-    else
-      Keyword.put(options, :output,
-                  inputfile <> "." <> Keyword.get(options, :target, "x86_64"))
-    end
-
-    res
+    file_content
+    |> Parser.parse_ast(options)
     |> Optimizer.optimize(options)
     |> Compiler.compile(options)
     :ok
+  end
+
+  #supply defaults
+  def run(inputfile, opts) do
+     cond do
+       opts[:target] == nil ->
+         run inputfile, Map.put(opts, :target, "x86_64")
+       opts[:output] == nil ->
+         outfile = inputfile <> "." <> opts[:target]
+         run inputfile, Map.put(opts, :output, outfile)
+       true ->
+         throw "Argument error! This should not be reached."
+     end
   end
 
   def help do
@@ -89,10 +94,11 @@ defmodule Bf2nasm do
         unless Keyword.get(options, :help) do
           IO.warn("No input specified.")
         end
-        {:error, :double_arg}
+        {:error, :no_input}
 
       {options, [inputfile], _} ->
-        {:ok, {inputfile, options}}
+        {:ok, {inputfile,
+               options |> Map.new }}
 
       _ ->
         IO.warn("Wrong arguments")

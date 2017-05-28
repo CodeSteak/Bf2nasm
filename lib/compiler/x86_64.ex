@@ -1,11 +1,8 @@
 defmodule Bf2nasm.Compiler.X86_64 do
 
-  def compile(ast, options) do
-    file_prefix = Keyword.get(options, :output)
-
-    "x86_64" = Keyword.get(options, :target, "x86_64")
-
-    memory_size = Keyword.get(options, :memory_size, 65536)
+  def compile(ast, %{:target => "x86_64",
+                    :output => file_prefix,
+                    :memory_size => memory_size}) do
 
     nasm = file_prefix<>".nasm"
     object = file_prefix<>".o"
@@ -33,6 +30,15 @@ defmodule Bf2nasm.Compiler.X86_64 do
         IO.warn "linking failed!"
         IO.puts err
         System.halt(n)
+    end
+  end
+
+  def compile(ast, opts) do
+    cond do
+      opts[:memory_size] == nil ->
+        compile ast, Map.put(opts, :memory_size, 65536)
+      true ->
+        throw "Argument error! This should not be reached."
     end
   end
 

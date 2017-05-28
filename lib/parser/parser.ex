@@ -1,7 +1,7 @@
 defmodule Bf2nasm.Parser do
   alias Bf2nasm.Parser.SourcePos, as: Pos
 
-  def parse_ast(code) do
+  def parse_ast(code, _options) do
     {:eof, "", out, _pos} = parse_ast(code, [], Pos.begin())
     out
   end
