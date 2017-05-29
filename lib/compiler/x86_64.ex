@@ -160,14 +160,14 @@ defmodule Bf2nasm.Compiler.X86_64 do
                   meta, dirty) do
     clean_value file, dirty
     IO.write(file, """
-      mov TEMP2, VALUE ; save
-      mov TEMP, #{factor1}
-      mul TEMP
-      add [POINTER#{n(offset1)}], VALUE
-      mov VALUE, TEMP2 ; restore
-      mov TEMP, #{factor2}
-      mul TEMP
-      add [POINTER#{n(offset2)}], VALUE
+      xor ax, ax
+      mov bx, ax
+      mov dx, #{factor1}
+      mov cx, #{factor2}
+      imul bx, dx
+      imul ax, cx
+      add [POINTER#{n(offset1)}], bl
+      add [POINTER#{n(offset2)}], al
       mov VALUE, 0
     """)
     compile_ast_info(tail, file, meta, false)
@@ -259,6 +259,7 @@ bracket_close_#{jmp}:
     %define VALUE_SAVE   r15
     %define TEMP         cl
     %define TEMP2        dl
+    %define TEMP3        bl
     %define VALUE        al
 
     section .bss
