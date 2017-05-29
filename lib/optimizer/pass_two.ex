@@ -1,62 +1,94 @@
 defmodule Bf2nasm.Optimizer.PassTwo do
-  use Bf2nasm.Optimizer.Template
 
-  # Set to zero
-  # [-]
-  def pattern(processed, [[{:inc, -1, pos}] | tail]) do
-    pattern(processed, [{:set, 0, pos} | tail])
+  def pattern(ast) do
+     pattern([], ast)
   end
 
-  # Add two numbers
-  # [->+<]
-  # next   += current
-  # current = 0
-  def pattern(processed, [[{:inc, -1, pos},
-                          {:incptr, offset1, _pos1},
-                          {:inc, 1, _pos2},
-                          {:incptr, offset2, _pos3}]| tail])
-                          when offset1 == -offset2 do
-    pattern(processed, [{:add_to_next_and_set_to_zero, offset1, pos} | tail])
+  def pattern(processed, []) do
+    processed
   end
 
-  # Sub two numbers
-  # [->-<]
-  # next   --= current
-  # current = 0
-  def pattern(processed, [[{:inc, -1, pos},
-                          {:incptr, offset1, _pos1},
-                          {:inc, -1, _pos2},
-                          {:incptr, offset2, _pos3}]| tail])
-                          when offset1 == -offset2 do
-    pattern(processed, [{:sub_to_next_and_set_to_zero, offset1, pos} | tail])
+  def pattern(processed, [inner | tail]) when is_list(inner) do
+    cond do
+      is_closed(inner)->
+        new_inner = optimize_closed(inner)
+        pattern( processed, new_inner ++ tail)
+      true  ->
+        new_inner = pattern(inner)
+        pattern( processed ++ [ new_inner ], tail)
+    end
   end
 
-  # Multiply One
-  # [->++<]
-  def pattern(processed, [[{:inc, -1, pos},
-                          {:incptr, offset1, _pos1},
-                          {:inc, factor1, _pos2},
-                          {:incptr, offset2, _pos3}]| tail])
-                          when offset1 == -offset2 and factor1 > 1 do
-    pattern(processed, [{:multiply_to_next_and_set_to_zero,
-                          {offset1, factor1}, pos} | tail])
+  def pattern(processed, [head | tail]) do
+    pattern(processed ++ [ head ], tail)
   end
 
-  # TODO Improve into One
-  # Multiply Two
-  # [->++<++>>]
-  def pattern(processed, [[{:inc, -1, pos},
-                          {:incptr, offset1, _pos1},
-                          {:inc, factor1, _pos2},
-                          {:incptr, offset2, _pos3},
-                          {:inc, factor2, _pos4},
-                          {:incptr, offset3, _pos5}]| tail])
-                          when offset1 + offset2 - offset3 == 0
-                              and factor1 != 0
-                              and factor2 != 0 do
-    pattern(processed, [{:multiply_to_two_and_set_to_zero,
-                         {offset1, factor1, offset2, factor2}, pos} | tail])
+  defp is_closed(inner) do
+    is_closed(inner, 0, 0)
   end
 
-  Bf2nasm.Optimizer.Template.end_use_template
+  def is_closed([{:inc, n, _pos}|tail], 0, inc) do
+    is_closed(tail, 0, inc+n)
+  end
+
+  def is_closed([{:inc, _n, _pos}|tail], pointer_pos, inc) do
+    is_closed(tail, pointer_pos, inc)
+  end
+
+  def is_closed([{:incptr, n, _pos}|tail], pointer_pos, inc) do
+    is_closed(tail, pointer_pos+n, inc)
+  end
+
+  def is_closed([], 0, -1) do
+    true
+  end
+
+  def is_closed(_, _, _) do
+    false
+  end
+
+  def optimize_closed(inner) do
+    env = Map.new()
+    optimize_closed(inner, env, 0)
+  end
+
+  def optimize_closed(list = [{_cmd, _args, pos} | _], env, offset) do
+    optimize_closed(list, env, offset, pos)
+  end
+
+  def optimize_closed([{:inc, n, _pos} | tail], env, offset, pos) do
+    delta = Map.get(env, offset, 0)
+    env   = Map.put(env, offset, delta+n)
+    optimize_closed(tail, env, offset, pos)
+  end
+
+  def optimize_closed([{:incptr, n, _pos} | tail], env, offset, pos) do
+    optimize_closed(tail, env, offset+n, pos)
+  end
+
+  def optimize_closed([], env = %{0 => -1}, 0, pos) do
+    (env
+     |> Map.to_list()
+     |> Enum.with_index()
+     |> Enum.flat_map(fn x ->
+       env_to_instr(x, pos)
+     end)
+    )++ [{:set, 0, pos}]
+  end
+
+  defp env_to_instr({{0, -1}, _}, _pos) do
+    []
+  end
+
+  defp env_to_instr({{offset, 1}, _}, pos) do
+    [{:add_value_to, offset, pos}]
+  end
+
+  defp env_to_instr({{offset, -1}, _}, pos) do
+    [{:sub_value_to, offset, pos}]
+  end
+
+  defp env_to_instr({{offset, n}, i}, pos) do
+    [{:add_multiple_of_value_to, {offset, n, rem(i,2)}, pos}]
+  end
 end

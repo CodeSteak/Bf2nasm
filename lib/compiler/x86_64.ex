@@ -83,7 +83,7 @@ defmodule Bf2nasm.Compiler.X86_64 do
     compile_ast_info(tail, file, meta, false)
   end
 
-  def compile_ast([{:dec, 1, _pos} | tail], file, meta, dirty) do
+  def compile_ast([{:inc, -1, _pos} | tail], file, meta, dirty) do
     clean_value file, dirty
     IO.write(file, """
       dec VALUE
@@ -99,6 +99,13 @@ defmodule Bf2nasm.Compiler.X86_64 do
     compile_ast_info(tail, file, meta, false)
   end
 
+  def compile_ast([{:set, 0, _pos} | tail], file, meta, _dirty) do
+    IO.write(file, """
+      xor VALUE, VALUE
+    """)
+    compile_ast_info(tail, file, meta, false)
+  end
+
   def compile_ast([{:set, value, _pos} | tail], file, meta, _dirty) do
     IO.write(file, """
       mov VALUE, byte #{value}
@@ -106,75 +113,63 @@ defmodule Bf2nasm.Compiler.X86_64 do
     compile_ast_info(tail, file, meta, false)
   end
 
-  def compile_ast([{:add_to_next_and_set_to_zero, offset, _pos} | tail],
+  def compile_ast([{:add_value_to, offset, _pos} | tail],
                   file,
                   meta, dirty) do
     clean_value file, dirty
     IO.write(file, """
       add [POINTER#{n(offset)}], VALUE
-      mov VALUE, 0
     """)
     compile_ast_info(tail, file, meta, false)
   end
 
-  def compile_ast([{:sub_to_next_and_set_to_zero, offset, _pos} | tail],
+  def compile_ast([{:sub_value_to, offset, _pos} | tail],
                   file,
                   meta, dirty) do
     clean_value file, dirty
     IO.write(file, """
       sub [POINTER#{n(offset)}], VALUE
-      mov VALUE, 0
     """)
     compile_ast_info(tail, file, meta, false)
   end
 
-  def compile_ast([{:multiply_to_next_and_set_to_zero,
-                      {offset, factor}, _pos} | tail], file, meta, dirty) do
+  def compile_ast([{:add_multiple_of_value_to,
+                      {offset, factor, _}, {:set, 0, _}} | tail], file, meta, dirty) when factor > 0 do
     clean_value file, dirty
     IO.write(file, """
-      mov TEMP, #{factor}
-      mul TEMP
+      mov bl, #{factor}
+      mul bl
       add [POINTER#{n(offset)}], VALUE
-      mov VALUE, 0
+      xor VALUE, VALUE
     """)
-    compile_ast_info(tail, file, meta, false)
+    compile_ast_info(tail, file, meta, true)
   end
 
-  #copy loop
-  def compile_ast([{:multiply_to_two_and_set_to_zero,
-                      {offset1, 1, offset2, 1}, _pos} | tail],
-                      file, meta, dirty) do
+  def compile_ast([{:add_multiple_of_value_to,
+                      {offset, factor, 0}, _pos} | tail], file, meta, dirty) do
     clean_value file, dirty
     IO.write(file, """
-      add [POINTER#{n(offset1)}], VALUE
-      add [POINTER#{n(offset2)}], VALUE
-      mov VALUE, 0
-    """)
-    compile_ast_info(tail, file, meta, false)
-  end
-
-  # TODO: deduplicate code
-  def compile_ast([{:multiply_to_two_and_set_to_zero,
-                      {offset1, factor1, offset2, factor2}, _pos} | tail],
-                  file,
-                  meta, dirty) do
-    clean_value file, dirty
-    IO.write(file, """
-      xor ax, ax
       mov bx, ax
-      mov dx, #{factor1}
-      mov cx, #{factor2}
-      imul bx, dx
-      imul ax, cx
-      add [POINTER#{n(offset1)}], bl
-      add [POINTER#{n(offset2)}], al
-      mov VALUE, 0
+      mov dx, #{factor}
+      imul dx, bx
+      add [POINTER#{n(offset)}], dl
     """)
     compile_ast_info(tail, file, meta, false)
   end
 
+  def compile_ast([{:add_multiple_of_value_to,
+                      {offset, factor, 1}, _pos} | tail], file, meta, dirty) do
+    clean_value file, dirty
+    IO.write(file, """
+      mov cx, ax
+      mov si, #{factor}
+      imul cx, si
+      add [POINTER#{n(offset)}], cl
+    """)
+    compile_ast_info(tail, file, meta, false)
+  end
 
-  def compile_ast([{:add_to_offset, {value, offset}, _pos} | tail],
+  def compile_ast([{:add_const_to_offset, {value, offset}, _pos} | tail],
                   file,
                   meta, dirty) do
     IO.write(file, """
